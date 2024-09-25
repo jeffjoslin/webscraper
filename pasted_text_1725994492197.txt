@@ -1,0 +1,33 @@
+INFO:werkzeug:Press CTRL+C to quit
+INFO:werkzeug: * Restarting with stat
+replacing old 'chromium-92.0.4515.159'
+replacing old 'chromedriver-92.0.4515.107'
+installing 'chromium-92.0.4515.159'
+installing 'chromedriver-92.0.4515.107'
+INFO:scraper:Environment setup complete. CHROME_BIN: /home/runner/.nix-profile/bin/chromium, CHROMEDRIVER_PATH: /home/runner/.nix-profile/bin/chromedriver
+INFO:scraper:Chrome binary path: /home/runner/.nix-profile/bin/chromium
+INFO:scraper:ChromeDriver path: /home/runner/.nix-profile/bin/chromedriver
+INFO:scraper:Chrome binary exists: True
+INFO:scraper:ChromeDriver exists: True
+ERROR:scraper:Failed to get ChromeDriver version: Command '['/home/runner/.nix-profile/bin/chromedriver', '--version']' died with <Signals.SIGSEGV: 11>.
+DEBUG:selenium.webdriver.common.service:Started executable: `/home/runner/.nix-profile/bin/chromedriver` in a child process with pid: 861
+ERROR:scraper:Error in ChromeDriver setup: Message: Service /home/runner/.nix-profile/bin/chromedriver unexpectedly exited. Status code was: -11
+
+ERROR:scraper:Full traceback:
+Traceback (most recent call last):
+  File "/home/runner/SpecifyIt/scraper.py", line 106, in check_chromedriver_setup
+    driver = webdriver.Chrome(service=service, options=options)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/SpecifyIt/.pythonlibs/lib/python3.11/site-packages/selenium/webdriver/chrome/webdriver.py", line 49, in __init__
+    super().__init__(
+  File "/home/runner/SpecifyIt/.pythonlibs/lib/python3.11/site-packages/selenium/webdriver/chromium/webdriver.py", line 51, in __init__
+    self.service.start()
+  File "/home/runner/SpecifyIt/.pythonlibs/lib/python3.11/site-packages/selenium/webdriver/common/service.py", line 97, in start
+    self.assert_process_still_running()
+  File "/home/runner/SpecifyIt/.pythonlibs/lib/python3.11/site-packages/selenium/webdriver/common/service.py", line 110, in assert_process_still_running
+    raise WebDriverException(f"Service {self._path} unexpectedly exited. Status code was: {return_code}")
+selenium.common.exceptions.WebDriverException: Message: Service /home/runner/.nix-profile/bin/chromedriver unexpectedly exited. Status code was: -11
+
+INFO:main:Starting Flask application
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 665-323-121

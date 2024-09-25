@@ -1,0 +1,50 @@
+Python Webhook Service Specifications:  Name: WebSiteScarpeService 
+
+1. Overview: This Python script will function as a webhook service that accepts incoming requests containing a website URL, OpenAI API key, Assistant ID and Webhook Key. When triggered, the service will scrape the provided website, count the number of pages, validate the content, and return a sample of the homepage data. The webhook is designed for integration with automation platforms like Make.
+
+2. Webhook Inputs: The webhook will accept a POST request with the following parameters:
+•	Website URL: The URL of the website to be scraped.
+•	OpenAI API Key: The API key used for interacting with OpenAI’s Assistant API.
+•	Assistant ID: The identifier for the OpenAI Assistant associated with the chatbot.
+•	WebookKey: The API key will be used to interact with this webhook.The default key will be “My.pword.2024$$”
+
+3. Webhook Process: When triggered, the webhook service will:
+1.	Validate Input:
+•	Ensure the Website URL, OpenAI API key, Assistant ID, and webhook key are present and valid.
+2.	Scrape the Website:
+•	The webhook will initiate a scraping process for the provided website URL.
+•	It will handle both static and dynamically loaded content (such as JavaScript-rendered pages).
+3.	Page Count and Content Validation:
+•	The webhook will count the total number of pages retrieved from the website.
+•	It will verify whether the data can be successfully scraped and prepared for use and if so will move to step 4. 
+4.	Return Homepage Data:
+•	As part of the response, the webhook will return a portion of the homepage data (e.g., the first few paragraphs or visible text).
+5.	Return a Response:
+•	The webhook will return a JSON response that includes:
+•	The number of pages found on the website.
+•	The homepage content as a preview or example.
+•	The status of the scraping (successful or failed).
+•	Any errors encountered during the scraping process6. T7. The webhook must be able to be hosted on replit.
+
+Example Workflow Incoming Post request example:
+•	Incoming POST Request: json  {
+•	  "website_url": "https://example.com",
+•	  "openai_api_key": "your-openai-api-key",
+•	  "assistant_id": "assistant-id-123"
+•	}
+•	  
+•	Webhook Response Example: json   {
+•	  "status": "success",
+•	  "pages_found": 12,
+•	  "homepage_content": "Welcome to our website! We offer the best services...",
+•	  "message": "Website successfully scraped."
+•	}
+•	  
+
+6.	Error Handling:
+•	If any of the required fields (Website URL, OpenAI API key, or Assistant ID) are missing or invalid, the webhook will return a 400 Bad Request error with a descriptive message.
+•	If the website cannot be accessed or scraped, the webhook will return an error in the JSON response indicating the reason (e.g., invalid URL, access denied).
+
+7.	Continuous Scraping:
+•	The webhook can be triggered multiple times for the same or different websites, allowing repeated scrubbing without needing to reset parameters.
+
