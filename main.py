@@ -1,8 +1,8 @@
+import os
 from flask import Flask, request, jsonify, send_from_directory
 from scraper import scrape_website, ScrapingError
 from validator import validate_input
 import logging
-import os
 from functools import wraps
 from time import time
 from selenium.common.exceptions import WebDriverException
@@ -10,11 +10,13 @@ from selenium.common.exceptions import WebDriverException
 app = Flask(__name__, static_folder='assets')
 logging.basicConfig(level=logging.DEBUG)
 
-# Get the webhook key from environment variable
+# Get the webhook key from system variable
 WEBHOOK_KEY = os.environ.get('WEBHOOK_KEY')
 
+app.logger.debug(f"WEBHOOK_KEY read from system variable: {'[SET]' if WEBHOOK_KEY else '[NOT SET]'}")
+
 if not WEBHOOK_KEY:
-    raise ValueError("WEBHOOK_KEY environment variable is not set")
+    raise ValueError("WEBHOOK_KEY system variable is not set. Please set it using: set WEBHOOK_KEY=Your_Key")
 
 # Simple in-memory cache
 cache = {}
@@ -46,6 +48,7 @@ def webhook():
 
     received_key = request.headers.get('X-Webhook-Key')
     app.logger.debug(f"Received key: {received_key}")
+    app.logger.debug(f"Keys match: {received_key == WEBHOOK_KEY}")
 
     if request.method == 'GET':
         return jsonify({"message": "Webhook endpoint is active. Please use POST method to submit data."}), 200
@@ -149,6 +152,12 @@ def test_validator():
 
     return jsonify({"test_results": results})
 
+@app.route('/debug_env')
+def debug_env():
+    return jsonify({
+        "WEBHOOK_KEY": "[SET]" if WEBHOOK_KEY else "[NOT SET]"
+    })
+
 if __name__ == "__main__":
     app.logger.info("Starting Flask application")
-    app.run(host='0.0.0.0', port=8081, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)

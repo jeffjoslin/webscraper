@@ -7,8 +7,11 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.common.exceptions import WebDriverException
+import re
+import os
 
 logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 USER_AGENTS = [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
@@ -23,30 +26,18 @@ class ScrapingError(Exception):
 
 def setup_driver():
     chrome_options = Options()
-    chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--headless")  # Comment out if you want to see the browser
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument(f"user-agent={random.choice(USER_AGENTS)}")
     
     try:
-        # Try to get the latest stable ChromeDriver
-        driver_path = ChromeDriverManager().install()
-        logger.info(f"ChromeDriver installed at: {driver_path}")
-        service = Service(driver_path)
+        service = Service(ChromeDriverManager().install())
         driver = webdriver.Chrome(service=service, options=chrome_options)
         return driver
     except Exception as e:
-        logger.warning(f"Failed to set up latest ChromeDriver: {str(e)}")
-        try:
-            # Try with a specific version known to be stable
-            driver_path = ChromeDriverManager(version="114.0.5735.90").install()
-            logger.info(f"ChromeDriver (version 114.0.5735.90) installed at: {driver_path}")
-            service = Service(driver_path)
-            driver = webdriver.Chrome(service=service, options=chrome_options)
-            return driver
-        except Exception as e2:
-            logger.error(f"Failed to set up ChromeDriver with specific version: {str(e2)}")
-            raise ScrapingError(f"Failed to set up ChromeDriver. Latest version error: {str(e)}. Specific version error: {str(e2)}")
+        logger.error(f"Failed to set up ChromeDriver: {str(e)}")
+        raise ScrapingError(f"Failed to set up ChromeDriver: {str(e)}")
 
 def fetch_html(url):
     driver = None
@@ -92,3 +83,22 @@ def count_pages(soup):
     internal_links = soup.find_all('a', href=lambda href: href and not href.startswith(('http', 'www')) and href != '#')
     valid_links = set(link['href'] for link in internal_links if 'href' in link.attrs and link['href'].strip() != '')
     return len(valid_links) + 1 if valid_links else 1
+
+def test_scraper():
+    test_url = "https://example.com"
+    try:
+        result = scrape_website(test_url)
+        print(f"Successfully scraped {test_url}")
+        print("Scraped data:")
+        for key, value in result.items():
+            if key == "links":
+                print(f"{key}: {len(value)} links found")
+            elif key == "main_content":
+                print(f"{key}: {value[:100]}... (truncated)")
+            else:
+                print(f"{key}: {value}")
+    except ScrapingError as e:
+        print(f"Failed to scrape {test_url}: {str(e)}")
+
+if __name__ == "__main__":
+    test_scraper()
