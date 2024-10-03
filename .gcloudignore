@@ -1,0 +1,38 @@
+# Python pycache:
+__pycache__/
+# Ignored by the build system
+/setup.cfg
+# .git and .gitignore files
+.git
+.gitignore
+# Virtual environment
+venv/
+# Local development files
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.git/
+.mypy_cache/
+.pytest_cache/
+.hypothesis/
+# Environment variables file
+.env
+# Uninstall script
+uninstall_packages.ps1
+# Logs directory
+logs/
+# IIS specific files
+web.config
+aspnet_client/

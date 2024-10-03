@@ -2,13 +2,8 @@ import logging
 from bs4 import BeautifulSoup
 import trafilatura
 import random
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.common.exceptions import WebDriverException
+import requests
 import re
-import os
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -24,34 +19,16 @@ USER_AGENTS = [
 class ScrapingError(Exception):
     pass
 
-def setup_driver():
-    chrome_options = Options()
-    chrome_options.add_argument("--headless")  # Comment out if you want to see the browser
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
-    chrome_options.add_argument(f"user-agent={random.choice(USER_AGENTS)}")
-    
-    try:
-        service = Service(ChromeDriverManager().install())
-        driver = webdriver.Chrome(service=service, options=chrome_options)
-        return driver
-    except Exception as e:
-        logger.error(f"Failed to set up ChromeDriver: {str(e)}")
-        raise ScrapingError(f"Failed to set up ChromeDriver: {str(e)}")
-
 def fetch_html(url):
-    driver = None
+    headers = {'User-Agent': random.choice(USER_AGENTS)}
     try:
-        driver = setup_driver()
         logger.info(f"Fetching HTML for {url}")
-        driver.get(url)
-        return driver.page_source
-    except WebDriverException as e:
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        return response.text
+    except requests.RequestException as e:
         logger.error(f"Failed to fetch HTML for {url}: {str(e)}")
-        raise ScrapingError(f"Selenium request failed: {str(e)}")
-    finally:
-        if driver:
-            driver.quit()
+        raise ScrapingError(f"Request failed: {str(e)}")
 
 def scrape_website(url, max_retries=3):
     logger.info(f"Scraping website: {url}")

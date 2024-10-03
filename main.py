@@ -5,18 +5,29 @@ from validator import validate_input
 import logging
 from functools import wraps
 from time import time
-from selenium.common.exceptions import WebDriverException
+from google.cloud import secretmanager
 
 app = Flask(__name__, static_folder='assets')
 logging.basicConfig(level=logging.DEBUG)
 
-# Get the webhook key from system variable
-WEBHOOK_KEY = os.environ.get('WEBHOOK_KEY')
+def get_secret(secret_id):
+    client = secretmanager.SecretManagerServiceClient()
+    name = f"projects/scraper-436405/secrets/{secret_id}/versions/latest"
+    response = client.access_secret_version(request={"name": name})
+    return response.payload.data.decode("UTF-8")
 
-app.logger.debug(f"WEBHOOK_KEY read from system variable: {'[SET]' if WEBHOOK_KEY else '[NOT SET]'}")
+# Get the webhook key from system variable or Secret Manager
+WEBHOOK_KEY = os.environ.get('WEBHOOK_KEY')
+if WEBHOOK_KEY and WEBHOOK_KEY.startswith('sm://'):
+    secret_id = WEBHOOK_KEY.split('/')[-3]
+    WEBHOOK_KEY = get_secret(secret_id)
+
+print(f"WEBHOOK_KEY read: {'[SET]' if WEBHOOK_KEY else '[NOT SET]'}")
+print(f"WEBHOOK_KEY value: {WEBHOOK_KEY}")
 
 if not WEBHOOK_KEY:
-    raise ValueError("WEBHOOK_KEY system variable is not set. Please set it using: set WEBHOOK_KEY=Your_Key")
+    print("WEBHOOK_KEY is not set.")
+    raise ValueError("WEBHOOK_KEY is not set. Please set it using: set WEBHOOK_KEY=Your_Key")
 
 # Simple in-memory cache
 cache = {}
@@ -44,25 +55,26 @@ def rate_limit(func):
 @app.route('/webhook', methods=['GET', 'POST'])
 @rate_limit
 def webhook():
-    app.logger.debug(f"Received {request.method} webhook request")
+    print(f"Received {request.method} webhook request")
 
     received_key = request.headers.get('X-Webhook-Key')
-    app.logger.debug(f"Received key: {received_key}")
-    app.logger.debug(f"Keys match: {received_key == WEBHOOK_KEY}")
+    print(f"Received key: {received_key}")
+    print(f"Stored WEBHOOK_KEY: {WEBHOOK_KEY}")
+    print(f"Keys match: {received_key == WEBHOOK_KEY}")
 
     if request.method == 'GET':
         return jsonify({"message": "Webhook endpoint is active. Please use POST method to submit data."}), 200
 
     if received_key != WEBHOOK_KEY:
-        app.logger.warning("Invalid webhook key received")
+        print("Invalid webhook key received")
         return jsonify({"error": "Invalid webhook key"}), 401
 
     data = request.json
-    app.logger.debug(f"Received data: {data}")
+    print(f"Received data: {data}")
 
     validation_result = validate_input(data)
     if validation_result:
-        app.logger.warning(f"Validation error: {validation_result}")
+        print(f"Validation error: {validation_result}")
         return jsonify({"error": validation_result}), 400
 
     website_url = data['website_url']
@@ -70,10 +82,10 @@ def webhook():
     try:
         # Check cache first
         if website_url in cache and time() - cache[website_url]['timestamp'] < CACHE_TIMEOUT:
-            app.logger.info(f"Returning cached data for: {website_url}")
+            print(f"Returning cached data for: {website_url}")
             return jsonify(cache[website_url]['data']), 200
 
-        app.logger.info(f"Scraping website: {website_url}")
+        print(f"Scraping website: {website_url}")
         scraped_data = scrape_website(website_url)
 
         response = {
@@ -88,19 +100,16 @@ def webhook():
             'timestamp': time()
         }
 
-        app.logger.info("Scraping successful")
+        print("Scraping successful")
         return jsonify(response), 200
 
     except ScrapingError as e:
-        app.logger.error(f"Scraping failed: {str(e)}")
+        print(f"Scraping failed: {str(e)}")
         return jsonify({"error": str(e), "status": "failed"}), 500
-    except WebDriverException as e:
-        app.logger.error(f"Selenium WebDriver error: {str(e)}")
-        return jsonify({"error": f"Selenium WebDriver error: {str(e)}", "status": "failed"}), 500
 
 @app.route('/')
 def home():
-    return "WebSiteScarpeService is running!"
+    return "Welcome to The Bot Experts Webservices!"
 
 @app.route('/assets/<path:filename>')
 def serve_static(filename):
@@ -119,15 +128,11 @@ def test_scraper():
             "status": "success",
             "scraped_data": scraped_data
         }
-        app.logger.info(f"Test scraper response: {response}")  # Log the response
+        print(f"Test scraper response: {response}")
         return jsonify(response), 200
     except ScrapingError as e:
         error_response = {"error": str(e), "status": "failed"}
-        app.logger.error(f"Test scraper error: {error_response}")  # Log the error
-        return jsonify(error_response), 500
-    except WebDriverException as e:
-        error_response = {"error": f"Selenium WebDriver error: {str(e)}", "status": "failed"}
-        app.logger.error(f"Test scraper error: {error_response}")  # Log the error
+        print(f"Test scraper error: {error_response}")
         return jsonify(error_response), 500
 
 @app.route('/test_validator')
@@ -155,9 +160,11 @@ def test_validator():
 @app.route('/debug_env')
 def debug_env():
     return jsonify({
-        "WEBHOOK_KEY": "[SET]" if WEBHOOK_KEY else "[NOT SET]"
+        "WEBHOOK_KEY": "[SET]" if WEBHOOK_KEY else "[NOT SET]",
+        "WEBHOOK_KEY_VALUE": WEBHOOK_KEY[:5] + "..." if WEBHOOK_KEY else None
     })
 
 if __name__ == "__main__":
-    app.logger.info("Starting Flask application")
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    print("Starting Flask application")
+    port = int(os.environ.get('PORT', 8080))
+    app.run(host='0.0.0.0', port=port, debug=True)
